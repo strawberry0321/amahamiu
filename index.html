@@ -18,11 +18,24 @@
     <style>
         /* 内嵌样式表：存放页面的所有 CSS 样式 */
 
-        html, body {
-            margin: 0;        /* 清除浏览器默认的外边距，避免页面四周出现白边 */
-            padding: 0;       /* 清除浏览器默认的内边距 */
-            height: 100%;     /* 占满整个视口高度 */
-            background: #F4C0D2;  /* 页面背景色：粉色 #F4C0D2，即 rgb(244,192,210) / hsl(339,70%,85%) */
+        html {
+            height: 100%;   /* 保证渐变背景可以铺满整个视口 */
+        }
+
+        body {
+            margin: 0;      /* 清除浏览器默认的外边距，避免页面四周出现白边 */
+            min-height: 100%;   /* 占满整个视口高度 */
+            padding: 0;     /* 清除浏览器默认的内边距 */
+            /* 粉色渐变背景：以 #F4C0D2 为主色，向浅粉/深粉过渡，色块放大 4 倍便于位移动画 */
+            background: linear-gradient(-45deg, #F4C0D2, #FADCE6, #F4C0D2, #F7A8C4);
+            background-size: 400% 400%;
+            animation: breathing 8s ease-in-out infinite;   /* 应用呼吸动画：8 秒一个周期，循环播放 */
+        }
+
+        /* 呼吸动画关键帧：渐变在背景上缓慢往复流动，配合 ease-in-out 缓动呈现“吸气-呼气”般的呼吸节奏 */
+        @keyframes breathing {
+            0%, 100% { background-position: 0% 50%; }   /* 起始与结束状态一致，保证循环平滑 */
+            50%      { background-position: 100% 50%; } /* 中点达到最远位置，形成往复效果 */
         }
     </style>
 </head>
