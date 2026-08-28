@@ -52,6 +52,16 @@
             z-index: 1;         /* 悬浮在渐变背景之上；未来添加的正文内容请使用更高的 z-index */
         }
 
+        #dust {
+            position: fixed;    /* 星尘画布同样铺满整个视口 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;   /* 不拦截任何鼠标事件，只负责绘制 */
+            z-index: 2;         /* 位于星星之上、与按钮同层（DOM 顺序在按钮之前，不会遮挡按钮） */
+        }
+
         .home-button {
             /* 圆形图片按钮：无边框、无背景，仅显示图片本身 */
             border: none;           /* 无边框样式 */
@@ -133,6 +143,9 @@
 
     <canvas id="starfield"></canvas>
     <!-- 星星粒子画布：用于绘制漂浮闪烁的星星粒子 -->
+
+    <canvas id="dust"></canvas>
+    <!-- 星尘画布：绘制鼠标轨迹的金黄色星尘粒子 -->
 
     <a id="homeButton" class="home-button" href="home.html" title="进入主页">
         <!-- 圆形图片按钮：点击跳转到主页 home.html -->
@@ -264,6 +277,79 @@
                     }, 700);    // 等待 0.6s 淡出过渡结束后再移除节点
                 }, MIN_SHOW);
             });
+        })();
+    </script>
+    <script>
+        // 鼠标星尘脚本：鼠标移动时在轨迹上洒出金黄色星尘粒子，渐变缩小并淡出消散
+        (function () {
+            'use strict';
+
+            const canvas = document.getElementById('dust');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            // 在指定位置洒出一批星尘粒子：位置、速度、大小、色相（金黄区间）均带随机扰动
+            function spawnDust(x, y) {
+                const count = 2 + Math.floor(Math.random() * 2);    // 每次移动洒出 2~3 颗
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        x: x + (Math.random() - 0.5) * 10,          // 在指针附近随机散开
+                        y: y + (Math.random() - 0.5) * 10,
+                        vx: (Math.random() - 0.5) * 1.2,            // 横向缓慢飘散
+                        vy: -(Math.random() * 0.8 + 0.2),           // 整体缓缓向上飘起
+                        r: Math.random() * 2.5 + 1,                 // 初始半径：1 ~ 3.5 像素
+                        life: 1,                                    // 剩余寿命（1 → 0）
+                        decay: Math.random() * 0.018 + 0.012,       // 消散速度：每帧衰减量
+                        hue: 38 + Math.random() * 16,               // 色相 38~54：金黄 → 金橙渐变
+                        light: 58 + Math.random() * 14              // 亮度随机，形成深浅渐变层次
+                    });
+                }
+            }
+
+            function animate() {
+                // 每帧清空画布后重绘，粒子透明度随寿命递减形成渐隐
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.globalCompositeOperation = 'lighter';   // 叠加发光模式，星尘重叠处更亮
+
+                particles = particles.filter(function (p) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy -= 0.005;      // 轻微向上加速，呈"飘起"感
+                    p.life -= p.decay;
+                    if (p.life <= 0) { return false; }
+
+                    const alpha = p.life;                           // 透明度随寿命渐隐
+                    const radius = p.r * (0.4 + 0.6 * p.life);      // 半径随寿命缩小
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                    // 金黄色渐变：中心亮白偏金，边缘转为金橙，随寿命逐渐变暗
+                    const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius * 2.2);
+                    grd.addColorStop(0, 'hsla(' + p.hue + ', 100%, ' + (p.light + 22) + '%, ' + alpha + ')');
+                    grd.addColorStop(0.45, 'hsla(' + p.hue + ', 100%, ' + p.light + '%, ' + (alpha * 0.85) + ')');
+                    grd.addColorStop(1, 'hsla(' + (p.hue - 6) + ', 95%, 48%, 0)');
+                    ctx.fillStyle = grd;
+                    ctx.fill();
+                    return true;
+                });
+
+                ctx.globalCompositeOperation = 'source-over';
+                requestAnimationFrame(animate);
+            }
+
+            // 监听全页鼠标移动：在指针位置洒出星尘
+            document.addEventListener('mousemove', function (e) {
+                spawnDust(e.clientX, e.clientY);
+            });
+
+            window.addEventListener('resize', resize);
+            resize();
+            requestAnimationFrame(animate);
         })();
     </script>
 </body>
