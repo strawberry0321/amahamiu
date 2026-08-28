@@ -30,6 +30,7 @@
             background: linear-gradient(-45deg, #F4C0D2, #FADCE6, #F4C0D2, #F7A8C4);
             background-size: 400% 400%;
             animation: breathing 8s ease-in-out infinite;   /* 应用呼吸动画：8 秒一个周期，循环播放 */
+            overflow: hidden;   /* 隐藏溢出内容，防止星星粒子飘出边界时产生滚动条 */
         }
 
         /* 呼吸动画关键帧：渐变在背景上缓慢往复流动，配合 ease-in-out 缓动呈现“吸气-呼气”般的呼吸节奏 */
@@ -37,10 +38,98 @@
             0%, 100% { background-position: 0% 50%; }   /* 起始与结束状态一致，保证循环平滑 */
             50%      { background-position: 100% 50%; } /* 中点达到最远位置，形成往复效果 */
         }
+
+        #starfield {
+            position: fixed;    /* 相对视口固定定位，不随页面滚动 */
+            top: 0;             /* 铺满整个视口 */
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;   /* 让鼠标点击/悬停穿透画布，不影响未来页面内容的交互 */
+            z-index: 1;         /* 悬浮在渐变背景之上；未来添加的正文内容请使用更高的 z-index */
+        }
     </style>
 </head>
 
 <body>
-    <!-- 主体区域：页面的可见内容都写在这里（当前为空白页） -->
+    <!-- 主体区域：页面的可见内容都写在这里 -->
+
+    <canvas id="starfield"></canvas>
+    <!-- 星星粒子画布：用于绘制漂浮闪烁的星星粒子 -->
+
+    <script>
+        // 星星粒子脚本：生成随机星星，让它们缓慢漂浮并周期性闪烁
+        (function () {
+            'use strict';
+
+            const canvas = document.getElementById('starfield');
+            const ctx = canvas.getContext('2d');
+            let stars = [];
+
+            // 星星密度：每 9000 平方像素约 1 颗星星，屏幕越大星星越多
+            const DENSITY = 9000;
+
+            // 创建星星：每颗星星拥有随机的大小、亮度、闪烁速度、相位和漂浮速度
+            function createStars() {
+                const count = Math.floor(canvas.width * canvas.height / DENSITY);
+                stars = Array.from({ length: count }, function () {
+                    return {
+                        x: Math.random() * canvas.width,        // 初始横向位置
+                        y: Math.random() * canvas.height,       // 初始纵向位置
+                        r: Math.random() * 1.6 + 0.4,           // 星星半径：0.4 ~ 2.0 像素
+                        baseAlpha: Math.random() * 0.5 + 0.3,   // 基础亮度：0.3 ~ 0.8
+                        twinkleSpeed: Math.random() * 1.5 + 0.5,    // 闪烁速度：每颗各不相同
+                        phase: Math.random() * Math.PI * 2,     // 闪烁相位：错开起始时间，避免整齐划一
+                        vx: (Math.random() - 0.5) * 0.15,       // 横向漂移速度：缓慢左右摇摆
+                        vy: -(Math.random() * 0.2 + 0.05)       // 纵向速度：整体缓缓向上漂浮
+                    };
+                });
+            }
+
+            // 调整画布尺寸以匹配窗口，并在窗口变化时重建星星
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                createStars();
+            }
+
+            // 绘制单颗星星：透明度按正弦规律周期变化，产生闪烁效果
+            function drawStar(star, time) {
+                const twinkle = 0.5 + 0.5 * Math.sin(time * 0.001 * star.twinkleSpeed + star.phase);
+                const alpha = star.baseAlpha * (0.35 + 0.65 * twinkle); // 亮度最低保持 35%，避免星星完全消失
+
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha.toFixed(3) + ')';
+                ctx.shadowBlur = star.r * 4;                    // 光晕半径与星星大小成正比
+                ctx.shadowColor = 'rgba(255, 255, 255, ' + (alpha * 0.8).toFixed(3) + ')';
+                ctx.fill();
+                ctx.shadowBlur = 0;                             // 清除光晕设置，避免影响下一颗星星
+            }
+
+            // 主循环：每帧清空画布 → 更新星星位置（越界则从另一侧回归）→ 重新绘制
+            function animate(time) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                stars.forEach(function (star) {
+                    star.x += star.vx;
+                    star.y += star.vy;
+
+                    // 边缘环绕：飘出边界的星星从对侧重新进入，保证画面始终有星星
+                    if (star.y < -5) { star.y = canvas.height + 5; }
+                    if (star.x < -5) { star.x = canvas.width + 5; }
+                    if (star.x > canvas.width + 5) { star.x = -5; }
+
+                    drawStar(star, time);
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+            requestAnimationFrame(animate);
+        })();
+    </script>
 </body>
 </html>
