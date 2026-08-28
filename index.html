@@ -77,11 +77,59 @@
             border-radius: 50%;
             pointer-events: none;   /* 让指针事件落在按钮上而非图片上，保证晃动计算稳定 */
         }
+
+        /* ===== 加载动画 ===== */
+
+        #loading {
+            position: fixed;    /* 覆盖整个视口 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;        /* 压在所有内容（含按钮、星星）之上 */
+            display: flex;      /* 字母组水平垂直居中 */
+            align-items: center;
+            justify-content: center;
+            /* 背景与页面主体一致，过渡时视觉上无缝衔接 */
+            background: linear-gradient(-45deg, #F4C0D2, #FADCE6, #F4C0D2, #F7A8C4);
+            background-size: 400% 400%;
+            animation: breathing 8s ease-in-out infinite;
+            transition: opacity 0.6s ease;  /* 加载完成后淡出 */
+        }
+
+        #loading.hidden {
+            opacity: 0;             /* 淡出至完全透明 */
+            pointer-events: none;   /* 淡出后不再拦截鼠标事件 */
+        }
+
+        #loading span {
+            display: inline-block;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            font-size: 2.6rem;          /* 字母大小 */
+            font-weight: 700;
+            color: #ffffff;             /* 白色字母 */
+            text-shadow: 0 2px 12px rgba(214, 100, 148, 0.55);  /* 粉色柔和投影，增加立体感 */
+            margin: 0 2px;              /* 字母间距 */
+            animation: sway 1.1s ease-in-out infinite;  /* 晃动动画：1.1 秒一个周期 */
+            /* 依次从左到右错开启动：每个字母比前一个晚 0.12 秒 */
+            animation-delay: calc(var(--i) * 0.12s);
+        }
+
+        /* 晃动关键帧：左右摆动并伴随轻微上下起伏，呈"摇头晃脑"的效果 */
+        @keyframes sway {
+            0%, 100% { transform: rotate(0deg) translateY(0); }
+            25%      { transform: rotate(-10deg) translateY(-6px); }    /* 向左歪并上抬 */
+            75%      { transform: rotate(10deg) translateY(6px); }      /* 向右歪并下沉 */
+        }
     </style>
 </head>
 
 <body>
     <!-- 主体区域：页面的可见内容都写在这里 -->
+
+    <div id="loading">
+        <!-- 加载动画遮罩：JS 会把 "AmahaMiu" 拆成单个字母并依次错峰晃动，加载完成后淡出移除 -->
+    </div>
 
     <canvas id="starfield"></canvas>
     <!-- 星星粒子画布：用于绘制漂浮闪烁的星星粒子 -->
@@ -187,6 +235,34 @@
             // 指针离开时恢复原始大小和位置（transition 提供平滑回落）
             btn.addEventListener('mouseleave', function () {
                 btn.style.transform = 'scale(1) translateY(0)';
+            });
+        })();
+    </script>
+    <script>
+        // 加载动画脚本：生成 "AmahaMiu" 字母（从左到右依次错峰晃动），页面加载完成后淡出
+        (function () {
+            'use strict';
+
+            const loading = document.getElementById('loading');
+            const TEXT = 'AmahaMiu';
+            const MIN_SHOW = 1500;  // 最短展示时长（毫秒），保证动画能被看到
+
+            // 把文字拆成单个字母，每个字母带递增的 --i 变量用于错峰延迟
+            TEXT.split('').forEach(function (ch, i) {
+                const span = document.createElement('span');
+                span.textContent = ch;
+                span.style.setProperty('--i', i);
+                loading.appendChild(span);
+            });
+
+            // 页面资源加载完毕后，至少展示 MIN_SHOW 毫秒再淡出，随后从 DOM 中移除遮罩
+            window.addEventListener('load', function () {
+                setTimeout(function () {
+                    loading.classList.add('hidden');
+                    setTimeout(function () {
+                        loading.remove();
+                    }, 700);    // 等待 0.6s 淡出过渡结束后再移除节点
+                }, MIN_SHOW);
             });
         })();
     </script>
