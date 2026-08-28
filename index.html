@@ -287,6 +287,8 @@
             const canvas = document.getElementById('dust');
             const ctx = canvas.getContext('2d');
             let particles = [];
+            let lastX = null, lastY = null;     // 上一次洒落点，用于在两次移动之间插值补齐轨迹
+            const MAX_PARTICLES = 600;          // 粒子上限，防止性能问题
 
             function resize() {
                 canvas.width = window.innerWidth;
@@ -295,20 +297,36 @@
 
             // 在指定位置洒出一批星尘粒子：位置、速度、大小、色相（金黄区间）均带随机扰动
             function spawnDust(x, y) {
-                const count = 2 + Math.floor(Math.random() * 2);    // 每次移动洒出 2~3 颗
+                if (particles.length >= MAX_PARTICLES) { return; }
+                const count = 3 + Math.floor(Math.random() * 2);    // 每个落点洒出 3~4 颗
                 for (let i = 0; i < count; i++) {
                     particles.push({
-                        x: x + (Math.random() - 0.5) * 10,          // 在指针附近随机散开
-                        y: y + (Math.random() - 0.5) * 10,
-                        vx: (Math.random() - 0.5) * 1.2,            // 横向缓慢飘散
-                        vy: -(Math.random() * 0.8 + 0.2),           // 整体缓缓向上飘起
+                        x: x + (Math.random() - 0.5) * 12,          // 在指针附近随机散开
+                        y: y + (Math.random() - 0.5) * 12,
+                        vx: (Math.random() - 0.5) * 0.8,            // 横向轻微摆动
+                        vy: Math.random() * 0.4,                    // 初始速度：略微向下
                         r: Math.random() * 2.5 + 1,                 // 初始半径：1 ~ 3.5 像素
                         life: 1,                                    // 剩余寿命（1 → 0）
-                        decay: Math.random() * 0.018 + 0.012,       // 消散速度：每帧衰减量
+                        decay: Math.random() * 0.006 + 0.004,       // 消散速度放缓，拖尾更绵长
                         hue: 38 + Math.random() * 16,               // 色相 38~54：金黄 → 金橙渐变
                         light: 58 + Math.random() * 14              // 亮度随机，形成深浅渐变层次
                     });
                 }
+            }
+
+            // 从上一次落点到当前位置逐点插值洒落，保证快速移动时轨迹依然连续不断
+            function trail(x, y) {
+                if (lastX === null) {
+                    spawnDust(x, y);
+                } else {
+                    const dist = Math.hypot(x - lastX, y - lastY);
+                    const steps = Math.max(1, Math.floor(dist / 14));   // 每隔约 14px 补一个落点
+                    for (let i = 1; i <= steps; i++) {
+                        spawnDust(lastX + (x - lastX) * i / steps, lastY + (y - lastY) * i / steps);
+                    }
+                }
+                lastX = x;
+                lastY = y;
             }
 
             function animate() {
@@ -317,10 +335,13 @@
                 ctx.globalCompositeOperation = 'lighter';   // 叠加发光模式，星尘重叠处更亮
 
                 particles = particles.filter(function (p) {
+                    p.vy += 0.045;      // 重力加速度：粒子逐渐加速向下坠落
                     p.x += p.vx;
                     p.y += p.vy;
-                    p.vy -= 0.005;      // 轻微向上加速，呈"飘起"感
                     p.life -= p.decay;
+
+                    // 触底消失：粒子坠落到画布最底部时立即移除
+                    if (p.y >= canvas.height - p.r) { return false; }
                     if (p.life <= 0) { return false; }
 
                     const alpha = p.life;                           // 透明度随寿命渐隐
@@ -342,9 +363,9 @@
                 requestAnimationFrame(animate);
             }
 
-            // 监听全页鼠标移动：在指针位置洒出星尘
+            // 监听全页鼠标移动：沿轨迹插值洒出星尘
             document.addEventListener('mousemove', function (e) {
-                spawnDust(e.clientX, e.clientY);
+                trail(e.clientX, e.clientY);
             });
 
             window.addEventListener('resize', resize);
