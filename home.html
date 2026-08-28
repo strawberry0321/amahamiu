@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!-- 文档类型声明：告诉浏览器这是 HTML5 文档 -->
+<html lang="zh-CN">
+<!-- lang="zh-CN"：声明页面语言为简体中文，利于搜索引擎和无障碍阅读 -->
+
+<head>
+    <!-- 头部区域：存放页面的元信息，不会显示在页面正文中 -->
+
+    <meta charset="UTF-8">
+    <!-- 字符编码：使用 UTF-8，保证中文等字符正常显示，避免乱码 -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 视口设置：让页面宽度适配设备屏幕宽度，初始缩放为 1.0，是移动端适配的基础 -->
+
+    <title>Home</title>
+    <!-- 页面标题：显示在浏览器标签页上 -->
+
+    <style>
+        /* 内嵌样式表：与入口页保持一致的粉色渐变呼吸背景 */
+
+        html {
+            height: 100%;   /* 保证渐变背景可以铺满整个视口 */
+        }
+
+        body {
+            margin: 0;      /* 清除浏览器默认的外边距 */
+            min-height: 100%;
+            padding: 0;
+            /* 粉色渐变背景：以 #F4C0D2 为主色，向浅粉/深粉过渡 */
+            background: linear-gradient(-45deg, #F4C0D2, #FADCE6, #F4C0D2, #F7A8C4);
+            background-size: 400% 400%;
+            animation: breathing 8s ease-in-out infinite;   /* 呼吸动画：8 秒一个周期 */
+            overflow: hidden;
+        }
+
+        /* 呼吸动画关键帧：与入口页相同 */
+        @keyframes breathing {
+            0%, 100% { background-position: 0% 50%; }
+            50%      { background-position: 100% 50%; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 主体区域：主页的可见内容（当前为空白，功能后续在此扩展） -->
+</body>
+</html>

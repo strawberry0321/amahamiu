@@ -31,6 +31,9 @@
             background-size: 400% 400%;
             animation: breathing 8s ease-in-out infinite;   /* 应用呼吸动画：8 秒一个周期，循环播放 */
             overflow: hidden;   /* 隐藏溢出内容，防止星星粒子飘出边界时产生滚动条 */
+            display: flex;      /* 弹性布局：让按钮在页面正中央居中 */
+            align-items: center;
+            justify-content: center;
         }
 
         /* 呼吸动画关键帧：渐变在背景上缓慢往复流动，配合 ease-in-out 缓动呈现“吸气-呼气”般的呼吸节奏 */
@@ -48,6 +51,32 @@
             pointer-events: none;   /* 让鼠标点击/悬停穿透画布，不影响未来页面内容的交互 */
             z-index: 1;         /* 悬浮在渐变背景之上；未来添加的正文内容请使用更高的 z-index */
         }
+
+        .home-button {
+            /* 圆形图片按钮：无边框、无背景，仅显示图片本身 */
+            border: none;           /* 无边框样式 */
+            outline: none;          /* 去除点击/聚焦时的默认轮廓线 */
+            background: transparent;    /* 按钮本体透明，只露出图片 */
+            padding: 0;             /* 清除按钮默认内边距 */
+            cursor: pointer;        /* 鼠标悬浮时显示手型指针，提示可点击 */
+            display: block;
+            width: 180px;           /* 按钮直径 */
+            height: 180px;
+            border-radius: 50%;     /* 裁剪为圆形 */
+            overflow: hidden;       /* 图片超出圆形范围的部分被裁掉 */
+            z-index: 2;             /* 位于星星画布之上 */
+            transition: transform 0.25s ease;   /* 缩放/位移变化时平滑过渡 */
+            will-change: transform;             /* 提示浏览器为 transform 动画做性能优化 */
+        }
+
+        .home-button img {
+            width: 100%;            /* 图片铺满按钮圆形区域 */
+            height: 100%;
+            object-fit: cover;      /* 保持图片比例居中裁剪填满圆形 */
+            display: block;
+            border-radius: 50%;
+            pointer-events: none;   /* 让指针事件落在按钮上而非图片上，保证晃动计算稳定 */
+        }
     </style>
 </head>
 
@@ -56,6 +85,11 @@
 
     <canvas id="starfield"></canvas>
     <!-- 星星粒子画布：用于绘制漂浮闪烁的星星粒子 -->
+
+    <a id="homeButton" class="home-button" href="home.html" title="进入主页">
+        <!-- 圆形图片按钮：点击跳转到主页 home.html -->
+        <img src="image/20072112EFA5C1932D3A5C56CFCC45F1.png" alt="进入主页">
+    </a>
 
     <script>
         // 星星粒子脚本：生成随机星星，让它们缓慢漂浮并周期性闪烁
@@ -129,6 +163,31 @@
             window.addEventListener('resize', resize);
             resize();
             requestAnimationFrame(animate);
+        })();
+    </script>
+
+    <script>
+        // 按钮悬浮交互：指针悬浮时图片放大，并随指针在图片内的上下位置晃动侧重位置
+        (function () {
+            'use strict';
+
+            const btn = document.getElementById('homeButton');
+            const MAX_SHIFT = 8;    // 晃动最大位移：8 像素
+            const SCALE = 1.08;     // 悬浮时放大的倍数
+
+            // 指针在按钮内移动时，计算指针的相对纵向位置（0=顶部，1=底部），
+            // 让图片向指针所在的一侧偏移，形成"侧重位置晃动"的效果
+            btn.addEventListener('mousemove', function (e) {
+                const rect = btn.getBoundingClientRect();
+                const relY = (e.clientY - rect.top) / rect.height;   // 指针纵向相对位置
+                const offsetY = (relY - 0.5) * 2 * MAX_SHIFT;        // 顶部为负（上移），底部为正（下移）
+                btn.style.transform = 'scale(' + SCALE + ') translateY(' + offsetY.toFixed(2) + 'px)';
+            });
+
+            // 指针离开时恢复原始大小和位置（transition 提供平滑回落）
+            btn.addEventListener('mouseleave', function () {
+                btn.style.transform = 'scale(1) translateY(0)';
+            });
         })();
     </script>
 </body>
